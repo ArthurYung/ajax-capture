@@ -1,12 +1,11 @@
-import typescript from "@rollup/plugin-typescript";
-// import commonjs from '@rollup/plugin-commonjs';
+import merge from "rollup-merge-config";
+import commonConfig from "./rollup/common.config";
+import devConfig from "./rollup/dev.config";
 
-export default {
-  input: "src/index.ts",
-  output: {
-    dir: "dist",
-    format: "cjs",
-    exports: "default"
-  },
-  plugins: [typescript({})]
+export default (args) => {
+  if (args.extends === "dev") {
+    return merge(commonConfig, devConfig);
+  }
+
+  return merge(commonConfig, devConfig);
 };

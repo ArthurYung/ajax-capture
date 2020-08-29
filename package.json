@@ -4,6 +4,7 @@
   "description": "浏览器请求抓包工具",
   "main": "index.js",
   "scripts": {
+    "dev": "rollup -c --watch --extends dev",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c"
   },
@@ -28,7 +29,10 @@
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jsdoc": "^30.3.0",
     "rollup": "^2.26.6",
+    "rollup-merge-config": "^0.0.2",
     "rollup-plugin-eslint": "^7.0.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-serve": "^1.0.4",
     "tslib": "^2.0.1",
     "typescript": "^4.0.2"
   }

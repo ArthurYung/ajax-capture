@@ -5,8 +5,11 @@ export default {
   output: {
     dir: "dist",
     format: "iife",
-    name: 'AC',
-    exports: "default"
+    name: 'jac',
+    exports: "default",
+    globals: {
+      'bowser': 'Bowser'
+    }
   },
   plugins: [
     server({

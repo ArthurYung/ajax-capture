@@ -6,7 +6,10 @@ export type EmitterItem = {
 export class EventBus {
   public _events: { [event: string]: Set<EmitterItem> } = {};
 
-  public on(event: string, listener: (...args: any[]) => void): void {
+  public on(
+    event: string,
+    listener: (...args: any[]) => void
+  ): void {
     const emitter = this._events[event]
       || (this._events[event] = new Set<EmitterItem>());
 
@@ -17,7 +20,10 @@ export class EventBus {
     });
   }
 
-  public once(event: string, listener: (...args: any[]) => void): void {
+  public once(
+    event: string,
+    listener: (...args: any[]) => void
+  ): void {
     const emitter = this._events[event]
       || (this._events[event] = new Set<EmitterItem>());
 
@@ -28,7 +34,10 @@ export class EventBus {
     });
   }
 
-  public off(event: string, listener: (...args: any[]) => void): boolean {
+  public off(
+    event: string,
+    listener: (...args: any[]) => void
+  ): boolean {
     let isRemoved = false;
     const emitter = this._events[event];
     if (emitter) {
@@ -50,7 +59,7 @@ export class EventBus {
     this._events[event]?.forEach((handle) => {
       handle.listener(...args);
       if (handle.once) {
-        this.off(event, handle.listener);
+        this._events[event].delete(handle);
       }
     });
   }

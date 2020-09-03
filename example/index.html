@@ -13,10 +13,15 @@
   </div>
   <script>
     jac();
-    document.getElementById('input').addEventListener('click', () => {
+    const clickEvent = () => {
       console.log('click')
+    }
+    document.getElementById('input').addEventListener('click', clickEvent)
+    document.getElementById('input').addEventListener('input', function() {
+      console.log('input')
+      this.removeEventListener('click', clickEvent)
     })
-
+    
   </script>
 </body>
 </html>

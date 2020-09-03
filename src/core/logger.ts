@@ -6,6 +6,7 @@ export enum MessageType {
   EVENT = 1,
   HTTP = 2,
   CONSOLE = 3,
+  NATIVE = 4,
   ERROR = 10,
 }
 

@@ -96,6 +96,7 @@ var jac = (function () {
         MessageType[MessageType["EVENT"] = 1] = "EVENT";
         MessageType[MessageType["HTTP"] = 2] = "HTTP";
         MessageType[MessageType["CONSOLE"] = 3] = "CONSOLE";
+        MessageType[MessageType["NATIVE"] = 4] = "NATIVE";
         MessageType[MessageType["ERROR"] = 10] = "ERROR";
     })(MessageType || (MessageType = {}));
     var MessageColor;
@@ -232,68 +233,102 @@ var jac = (function () {
         KeyboardEventActive["keypress"] = "\u89E6\u53D1\u8F93\u5165\u4E8B\u4EF6";
     })(KeyboardEventActive || (KeyboardEventActive = {}));
 
+    var limitOutput = function (str) {
+        if (!str)
+            return "undefined";
+        return str.toString().slice(0, 15);
+    };
+    var mouseEventEmitter = function (event) {
+        var target = event.target;
+        return [
+            MouseEventActive[event.type] || event.type,
+            event.type,
+            "<" + target.tagName + ">",
+            "ID::" + (target.id || "null"),
+            "TEXT::" + limitOutput(target.innerText),
+            "PAGE::" + event.pageX + "," + event.pageY
+        ];
+    };
+    var focusEventEmitter = function (event) {
+        var target = event.target;
+        return [
+            FocusEventActive[event.type] || event.type,
+            event.type,
+            "<" + target.tagName + ">",
+            "ID::" + (target.id || "null"),
+            "VAL::" + (target.value || "null")
+        ];
+    };
+    var inputEventEmitter = function (event) {
+        var target = event.target;
+        return [
+            InputEventActive[event.type] || event.type,
+            event.type,
+            "<" + target.tagName + ">",
+            "ID::" + (target.id || "null"),
+            "VAL::" + limitOutput(target.value),
+            "INPUT::" + event.data
+        ];
+    };
+    var keyboardEventEmitter = function (event) {
+        var target = event.target;
+        return [
+            KeyboardEventActive[event.type] || event.type,
+            event.type,
+            "<" + target.tagName + ">",
+            "ID::" + (target.id || "null"),
+            "VAL::" + limitOutput(target.value),
+            "CODE::" + event.code
+        ];
+    };
+    var defaultEventEmitter = function (event) {
+        var _a, _b;
+        return [
+            event.type,
+            "<" + ((_a = event.target) === null || _a === void 0 ? void 0 : _a.tagName) + ">",
+            "ID::" + (((_b = event.target) === null || _b === void 0 ? void 0 : _b.id) || "null")
+        ];
+    };
+    var getEventMessage = function (event) {
+        if (event instanceof MouseEvent)
+            return mouseEventEmitter(event);
+        if (event instanceof FocusEvent)
+            return focusEventEmitter(event);
+        if (event instanceof InputEvent)
+            return inputEventEmitter(event);
+        if (event instanceof KeyboardEvent)
+            return keyboardEventEmitter(event);
+        return defaultEventEmitter(event);
+    };
+
     var eventHacked = false;
     var eventHack = function () {
         if (eventHacked)
             return;
         eventHacked = true;
+        function hackEventListener(event) {
+            var _this = this;
+            clearTimeout(this.__loggerQueueTimeout);
+            this.__loggerQueueTimeout = setTimeout(function () {
+                _this.__latestActiveType = undefined;
+            }, 300);
+            if (this.__latestActiveType !== event.type) {
+                logger$1.put.apply(logger$1, __spreadArrays([MessageType.EVENT], getEventMessage(event)));
+                this.__latestActiveType = event.type;
+            }
+        }
         // eslint-disable-next-line max-len
         EventTarget.prototype.originAddEventListener = EventTarget.prototype.addEventListener;
         // eslint-disable-next-line max-len
         EventTarget.prototype.originRemoveEventListener = EventTarget.prototype.removeEventListener;
         EventTarget.prototype.addEventListener = function addEventHack(type, listener, options) {
-            var _this = this;
             if (!this.__eventListenerCount) {
                 this.__eventListenerCount = {};
             }
-            if (!this.__hackEventListeners) {
-                this.__hackEventListeners = {};
-            }
+            console.log(this.__eventListenerCount);
             if (!this.__eventListenerCount[type]) {
-                var hackEventListener = function (event) {
-                    clearTimeout(_this.__loggerQueueTimeout);
-                    _this.__loggerQueueTimeout = setTimeout(function () {
-                        _this.__latestActiveName = undefined;
-                        _this.__latestEventTarget = undefined;
-                    }, 300);
-                    if (!event.target.__eventId) {
-                        event.target.__eventId = Symbol(event.type);
-                    }
-                    // 300ms trigger once
-                    if (_this.__latestActiveType === event.type
-                        && (_this.__latestEventTarget === event.target.__eventId)) {
-                        return;
-                    }
-                    _this.__latestActiveType = event.type;
-                    _this.__latestEventTarget = event.target.__eventId;
-                    if (event instanceof MouseEvent) {
-                        // format mouseEvent message context
-                        var target = event.target;
-                        logger$1.put(MessageType.EVENT, MouseEventActive[type] || type, type, "<" + target.tagName + ">", "ID::" + (target.id || "null"), "TXT::" + (target.innerText.slice(0, 10) || "null"));
-                        return;
-                    }
-                    if (event instanceof FocusEvent) {
-                        // format focusEvent message context
-                        var target = event.target;
-                        logger$1.put(MessageType.EVENT, FocusEventActive[type] || type, type, "<" + target.tagName + ">", "ID::" + (target.id || "null"), "VAL::" + (target.value || "null"));
-                        return;
-                    }
-                    if (event instanceof InputEvent) {
-                        // format inputEvent message context
-                        var target = event.target;
-                        logger$1.put(MessageType.EVENT, InputEventActive[type] || type, type, "<" + target.tagName + ">", "ID::" + (target.id || "null"), "VAL::" + (target.value.slice(0, 10) || "null"), "INPUT::" + event.data);
-                        return;
-                    }
-                    if (event instanceof KeyboardEvent) {
-                        // format keyboardEvent message context
-                        var target = event.target;
-                        logger$1.put(MessageType.EVENT, KeyboardEventActive[type] || type, type, "<" + target.tagName + ">", "ID::" + (target.id || "null"), "VAL::" + (target.value.slice(0, 15) || "null"), "CODE::" + event.code);
-                        return;
-                    }
-                    logger$1.put(MessageType.EVENT, type, "<" + event.target.tagName + ">", "ID::" + (event.target.id || "null"));
-                };
                 this.__eventListenerCount[type] = 1;
-                this.__hackEventListeners[type] = hackEventListener;
+                console.log("binding hcak");
                 this.originAddEventListener(type, hackEventListener);
             }
             else {
@@ -302,21 +337,36 @@ var jac = (function () {
             this.originAddEventListener.call(this, type, listener, options);
         };
         EventTarget.prototype.removeEventListener = function removeEventHack(type, callback, options) {
-            var _a;
-            if ((_a = this.__eventListenerCount) === null || _a === void 0 ? void 0 : _a[type]) {
-                this.__eventListenerCount[type] -= 1;
+            if (!this.__eventListenerCount) {
+                this.__eventListenerCount = {};
             }
-            if (this.__eventListenerCount[type] === 0 && this.__hackEventListener) {
-                this.originAddEventListener(type, this.__hackEventListener[type]);
-                this.__hackEventListener[type] = undefined;
+            if (this.__eventListenerCount[type]) {
+                this.__eventListenerCount[type]--;
             }
-            this.originAddEventListener.call(this, type, callback, options);
+            if (this.__eventListenerCount[type] === 0) {
+                this.originRemoveEventListener(type, hackEventListener);
+            }
+            this.originRemoveEventListener.call(this, type, callback, options);
         };
+    };
+    var originBinding = function (target, type, listener, options) {
+        (target.originAddEventListener || target.addEventListener)(type, listener, options);
+    };
+
+    var popstateCallback = function () {
+        logger$1.put(MessageType.NATIVE, "HISTORY路由跳转", "popstate", global.location.href);
+    };
+    var nativeHack = function () {
+        originBinding(global, "load", function () {
+            logger$1.put(MessageType.NATIVE, "页面载入", "loaded");
+        });
+        originBinding(global, "popstate", popstateCallback);
     };
 
     var index = (function () {
         consoleHack();
         eventHack();
+        nativeHack();
         window.__logger = logger$1;
         console.log("31");
     });
